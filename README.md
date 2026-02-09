@@ -22,7 +22,7 @@ A RESTful API built with Django and Django REST Framework for managing projects,
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone git@github.com:AhmedAlaa27/Project-Management-API.git
 cd Project-Management-API
 ```
 
