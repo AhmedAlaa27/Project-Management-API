@@ -17,3 +17,23 @@ class RegisterSerializer(serializers.ModelSerializer):
             avatar=validated_data.get("avatar"),
         )
         return user
+
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ("username", "email", "avatar")
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "avatar",
+            "date_joined",
+        ]
