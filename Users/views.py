@@ -19,3 +19,27 @@ def register(request):
             status=status.HTTP_201_CREATED,
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET"])
+def user_list(request):
+    # Placeholder for fetching users from the database
+    pass
+
+
+@api_view(["GET"])
+def user_detail(request, user_id):
+    # Placeholder for fetching a specific user by ID
+    pass
+
+
+@api_view(["PUT"])
+def update_user(request, user_id):
+    # Placeholder for updating a specific user by ID
+    pass
+
+
+@api_view(["DELETE"])
+def delete_user(request, user_id):
+    # Placeholder for deleting a specific user by ID
+    pass
