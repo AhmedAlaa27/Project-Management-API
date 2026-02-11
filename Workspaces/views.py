@@ -5,7 +5,11 @@ from rest_framework.request import Request
 from rest_framework import status
 from typing import Any, cast
 
-from Workspaces.serializers import UpdateWorkspaceSerializer, WorkspaceSerializer
+from Workspaces.serializers import (
+    UpdateWorkspaceSerializer,
+    WorkspaceSerializer,
+    WorkspaceDetailSerializer,
+)
 from Workspaces.services import (
     create_workspace_service,
     delete_workspace_service,
@@ -14,6 +18,7 @@ from Workspaces.services import (
     update_workspace_service,
     user_list_workspaces_service,
 )
+from utils.responses import success_response, error_response, validation_error_response
 
 
 @api_view(["GET"])
@@ -21,7 +26,10 @@ from Workspaces.services import (
 def workspace_list(request: Request) -> Response:
     workspaces = list_workspaces_service()
     serializer = WorkspaceSerializer(workspaces, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return success_response(
+        data=serializer.data,
+        message="Workspaces retrieved successfully",
+    )
 
 
 @api_view(["GET"])
@@ -29,7 +37,10 @@ def workspace_list(request: Request) -> Response:
 def user_workspace_list(request: Request) -> Response:
     workspaces = user_list_workspaces_service(request.user)
     serializer = WorkspaceSerializer(workspaces, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return success_response(
+        data=serializer.data,
+        message="User workspaces retrieved successfully",
+    )
 
 
 @api_view(["POST"])
@@ -45,21 +56,34 @@ def create_workspace(request: Request) -> Response:
                 owner=request.user,
             )
             response_serializer = WorkspaceSerializer(workspace)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
+            return success_response(
+                data=response_serializer.data,
+                message="Workspace created successfully",
+                status_code=status.HTTP_201_CREATED,
             )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(
+                message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+    return validation_error_response(errors=serializer.errors)
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def workspace_detail(request: Request, workspace_id: int) -> Response:
-    workspace = get_workspace_by_id_service(workspace_id)
-    serializer = WorkspaceSerializer(workspace, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    try:
+        workspace = get_workspace_by_id_service(workspace_id)
+        serializer = WorkspaceDetailSerializer(workspace)
+        return success_response(
+            data=serializer.data,
+            message="Workspace retrieved successfully",
+        )
+    except Exception as e:
+        return error_response(
+            message=str(e),
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
 
 
 @api_view(["PUT"])
@@ -75,13 +99,16 @@ def update_workspace(request: Request, workspace_id: int) -> Response:
                 description=data.get("description", ""),
             )
             response_serializer = WorkspaceSerializer(workspace)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
+            return success_response(
+                data=response_serializer.data,
+                message="Workspace updated successfully",
             )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(
+                message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+    return validation_error_response(errors=serializer.errors)
 
 
 @api_view(["DELETE"])
@@ -90,14 +117,17 @@ def delete_workspace(request: Request, workspace_id: int) -> Response:
     try:
         success = delete_workspace_service(workspace_id)
         if success:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return success_response(
+                message="Workspace deleted successfully",
+                status_code=status.HTTP_200_OK,
+            )
         else:
-            return Response(
-                {"error": "Failed to delete workspace."},
-                status=status.HTTP_400_BAD_REQUEST,
+            return error_response(
+                message="Failed to delete workspace",
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_400_BAD_REQUEST,
+        return error_response(
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
         )

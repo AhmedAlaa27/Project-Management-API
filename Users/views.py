@@ -12,6 +12,7 @@ from Users.services import (
     list_users_service,
     update_user_service,
 )
+from utils.responses import success_response, error_response, validation_error_response
 
 
 @api_view(["POST"])
@@ -20,14 +21,12 @@ def register(request: Request) -> Response:
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
-        return Response(
-            {
-                "message": "User registered successfully",
-                "user": serializer.data,
-            },
-            status=status.HTTP_201_CREATED,
+        return success_response(
+            data=serializer.data,
+            message="User registered successfully",
+            status_code=status.HTTP_201_CREATED,
         )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return validation_error_response(errors=serializer.errors)
 
 
 @api_view(["GET"])
@@ -35,7 +34,10 @@ def register(request: Request) -> Response:
 def user_list(request: Request) -> Response:
     users = list_users_service()
     serializer = UserSerializer(users, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return success_response(
+        data=serializer.data,
+        message="Users retrieved successfully",
+    )
 
 
 @api_view(["GET"])
@@ -44,11 +46,14 @@ def user_detail(request: Request, user_id: int) -> Response:
     try:
         user = get_user_by_id_service(user_id)
         serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return success_response(
+            data=serializer.data,
+            message="User retrieved successfully",
+        )
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_404_NOT_FOUND,
+        return error_response(
+            message=str(e),
+            status_code=status.HTTP_404_NOT_FOUND,
         )
 
 
@@ -65,13 +70,16 @@ def update_user(request: Request, user_id: int) -> Response:
                 email=data.get("email"),
             )
             response_serializer = UserSerializer(user)
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
+            return success_response(
+                data=response_serializer.data,
+                message="User updated successfully",
             )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(
+                message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+    return validation_error_response(errors=serializer.errors)
 
 
 @api_view(["DELETE"])
@@ -80,14 +88,17 @@ def delete_user(request: Request, user_id: int) -> Response:
     try:
         success = delete_user_service(user_id)
         if success:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return success_response(
+                message="User deleted successfully",
+                status_code=status.HTTP_200_OK,
+            )
         else:
-            return Response(
-                {"error": "Failed to delete user."},
-                status=status.HTTP_400_BAD_REQUEST,
+            return error_response(
+                message="Failed to delete user",
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_400_BAD_REQUEST,
+        return error_response(
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
         )

@@ -8,6 +8,7 @@ from typing import Any, cast
 from Projects.serializers import (
     CreateProjectSerializer,
     ProjectSerializer,
+    ProjectDetailSerializer,
     UpdateProjectSerializer,
 )
 from Projects.services import (
@@ -18,6 +19,7 @@ from Projects.services import (
     list_workspace_projects_service,
     update_project_service,
 )
+from utils.responses import success_response, error_response, validation_error_response
 
 
 @api_view(["GET"])
@@ -29,7 +31,10 @@ def project_list(request: Request) -> Response:
     else:
         projects = list_projects_service()
     serializer = ProjectSerializer(projects, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return success_response(
+        data=serializer.data,
+        message="Projects retrieved successfully",
+    )
 
 
 @api_view(["POST"])
@@ -46,13 +51,17 @@ def create_project(request: Request) -> Response:
                 deadline=data.get("deadline"),
             )
             response_serializer = ProjectSerializer(project)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
+            return success_response(
+                data=response_serializer.data,
+                message="Project created successfully",
+                status_code=status.HTTP_201_CREATED,
             )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(
+                message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+    return validation_error_response(errors=serializer.errors)
 
 
 @api_view(["GET"])
@@ -60,12 +69,15 @@ def create_project(request: Request) -> Response:
 def project_detail(request: Request, project_id: int) -> Response:
     try:
         project = get_project_by_id_service(project_id)
-        serializer = ProjectSerializer(project)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = ProjectDetailSerializer(project)
+        return success_response(
+            data=serializer.data,
+            message="Project retrieved successfully",
+        )
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_404_NOT_FOUND,
+        return error_response(
+            message=str(e),
+            status_code=status.HTTP_404_NOT_FOUND,
         )
 
 
@@ -83,13 +95,16 @@ def update_project(request: Request, project_id: int) -> Response:
                 deadline=data.get("deadline"),
             )
             response_serializer = ProjectSerializer(project)
-            return Response(response_serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST,
+            return success_response(
+                data=response_serializer.data,
+                message="Project updated successfully",
             )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return error_response(
+                message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+    return validation_error_response(errors=serializer.errors)
 
 
 @api_view(["DELETE"])
@@ -98,14 +113,17 @@ def delete_project(request: Request, project_id: int) -> Response:
     try:
         success = delete_project_service(project_id)
         if success:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return success_response(
+                message="Project deleted successfully",
+                status_code=status.HTTP_200_OK,
+            )
         else:
-            return Response(
-                {"error": "Failed to delete project."},
-                status=status.HTTP_400_BAD_REQUEST,
+            return error_response(
+                message="Failed to delete project",
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
     except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_400_BAD_REQUEST,
+        return error_response(
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
