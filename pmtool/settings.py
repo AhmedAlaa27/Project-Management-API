@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "storages",
     "Users",
     "Workspaces",
     "Projects",
@@ -59,6 +61,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -101,16 +104,27 @@ WSGI_APPLICATION = "pmtool.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB_NAME"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
+# Check if DATABASE_URL is set (production on Render)
+if os.getenv("DATABASE_URL"):
+    DATABASES = {
+        "default": dj_database_url.parse(
+            os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    # Local development configuration
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("DB_NAME"),
+            "HOST": os.getenv("DB_HOST"),
+            "PORT": os.getenv("DB_PORT"),
+            "USER": os.getenv("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD"),
+        }
+    }
 
 # Custom user model
 AUTH_USER_MODEL = "Users.User"
@@ -253,8 +267,52 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
+# WhiteNoise configuration for production static files
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Backblaze B2 Configuration for Media Files
+# B2 will be used when USE_B2_STORAGE=True, local storage otherwise
+USE_B2_STORAGE = os.getenv("USE_B2_STORAGE", "False") == "True"
+
+if USE_B2_STORAGE:
+    # Backblaze B2 Settings (Private Bucket - Free Tier Compatible)
+    AWS_ACCESS_KEY_ID = os.getenv("B2_APPLICATION_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = os.getenv("B2_APPLICATION_KEY")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
+    AWS_S3_ENDPOINT_URL = os.getenv("B2_ENDPOINT_URL")  # e.g., https://s3.us-east-005.backblazeb2.com
+    AWS_S3_REGION_NAME = os.getenv("B2_REGION", "us-east-005")  # Your B2 region
+    
+    # B2-specific settings for PRIVATE bucket (keeps it free)
+    AWS_S3_FILE_OVERWRITE = False  # Don't overwrite files with same name
+    AWS_DEFAULT_ACL = None  # Use bucket's default ACL (private)
+    AWS_QUERYSTRING_AUTH = True  # Generate signed URLs for private files
+    AWS_QUERYSTRING_EXPIRE = 3600  # Signed URLs expire in 1 hour
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',  # Cache for 1 day
+    }
+
+# Configure Django storage backends (Django 4.2+)
+if USE_B2_STORAGE:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field

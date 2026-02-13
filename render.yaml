@@ -1,0 +1,77 @@
+services:
+  # Web service - Django API
+  - type: web
+    name: pmtool-api
+    runtime: python
+    env: python
+    region: oregon # Change to your preferred region
+    plan: free # Change to paid plan as needed
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn pmtool.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        sync: false # You'll set this manually to your Render domain
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pmtool-db
+          property: connectionString
+      - key: SECURE_SSL_REDIRECT
+        value: true
+      - key: SESSION_COOKIE_SECURE
+        value: true
+      - key: CSRF_COOKIE_SECURE
+        value: true
+      - key: SECURE_HSTS_SECONDS
+        value: 31536000
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: true
+      - key: SECURE_HSTS_PRELOAD
+        value: true
+      # Backblaze B2 Configuration
+      - key: USE_B2_STORAGE
+        value: true
+      - key: B2_APPLICATION_KEY_ID
+        sync: false # Set manually in Render dashboard
+      - key: B2_APPLICATION_KEY
+        sync: false # Set manually in Render dashboard
+      - key: B2_BUCKET_NAME
+        sync: false # Set manually in Render dashboard
+      - key: B2_ENDPOINT_URL
+        value: https://s3.us-east-005.backblazeb2.com
+      - key: B2_REGION
+        value: us-east-005
+    autoDeploy: true
+    
+  # MySQL Database
+  - type: pserv
+    name: pmtool-db
+    runtime: docker
+    env: docker
+    region: oregon # Same region as web service
+    plan: free # Change to paid plan as needed
+    repo: https://github.com/render-examples/mysql # Render's MySQL template
+    envVars:
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+      - key: MYSQL_DATABASE
+        value: pmtool_db
+      - key: MYSQL_USER
+        value: pmtool_user
+      - key: MYSQL_PASSWORD
+        generateValue: true
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 1
+
+databases:
+  - name: pmtool-db
+    databaseName: pmtool_db
+    user: pmtool_user
+    plan: free # Change to paid plan as needed
