@@ -16,7 +16,10 @@ A RESTful API built with Django and Django REST Framework for managing projects,
 - **Django 6.0**
 - **Django REST Framework**
 - **Simple JWT** - JWT authentication
-- **MySQL** - Database (development)
+- **MySQL** - Database
+- **pytest** - Testing framework
+- **Factory Boy** - Test data generation
+- **python-dotenv** - Environment configuration
 
 ## Installation
 
@@ -37,17 +40,29 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. **Run migrations**
+4. **Set up environment variables**
+Create a `.env` file in the project root with your database credentials:
+```
+DB_NAME=your_database_name
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=your_username
+DB_PASSWORD=your_password
+SECRET_KEY=your_secret_key
+DEBUG=True
+```
+
+5. **Run migrations**
 ```bash
 python manage.py migrate
 ```
 
-5. **Create a superuser (optional)**
+6. **Create a superuser (optional)**
 ```bash
 python manage.py createsuperuser
 ```
 
-6. **Run the development server**
+7. **Run the development server**
 ```bash
 python manage.py runserver
 ```
@@ -124,9 +139,12 @@ Project-Management-API/
 ├── Workspaces/          # Workspace management app
 ├── Projects/            # Project management app
 ├── Tasks/               # Task management app
+├── utils/               # Utility functions (standardized responses)
+├── tests/               # Integration tests and test factories
 ├── media/               # Media files (avatars)
-├── manage.py
-└── db.sqlite3
+├── conftest.py          # Pytest configuration and fixtures
+├── pytest.ini           # Pytest settings
+└── manage.py
 ```
 
 ## Key Features Explained
@@ -147,18 +165,54 @@ Project-Management-API/
 - Access tokens expire and can be refreshed using refresh tokens
 - Protected endpoints require Bearer token in Authorization header
 
-## Development
+## Testing
 
-### Run tests
+The project uses **pytest** with comprehensive test coverage:
+
+### Run all tests
 ```bash
-python manage.py test
+pytest
 ```
+
+### Run specific test categories
+```bash
+pytest -m unit          # Unit tests only
+pytest -m integration   # Integration tests only
+pytest -m "not slow"    # Skip slow tests
+```
+
+### Run tests for a specific app
+```bash
+pytest Users/           # Test Users app
+pytest Projects/        # Test Projects app
+```
+
+### Run with coverage
+```bash
+pytest --cov=Users --cov=Workspaces --cov=Projects --cov=Tasks
+```
+
+### Test Structure
+- **Unit Tests**: Test models, serializers, and services
+- **Integration Tests**: Test API endpoints and workflows
+- **Test Factories**: Generate realistic test data using Factory Boy
+- **Fixtures**: Shared test utilities in `conftest.py`
+
+## Development
 
 ### Access Django admin
 Navigate to `http://localhost:8000/admin/` and login with superuser credentials.
 
-### Media files
-User avatars are stored in `media/avatars/` directory.
+### Standardized API Responses
+All endpoints return consistent response format using utility functions:
+```json
+{
+  "success": true/false,
+  "message": "Response message",
+  "data": {...},
+  "errors": null
+}
+```
 
 ## Contributing
 
