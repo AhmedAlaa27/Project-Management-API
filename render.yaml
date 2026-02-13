@@ -47,31 +47,10 @@ services:
       - key: B2_REGION
         value: us-east-005
     autoDeploy: true
-    
-  # MySQL Database
-  - type: pserv
-    name: pmtool-db
-    runtime: docker
-    env: docker
-    region: oregon # Same region as web service
-    plan: free # Change to paid plan as needed
-    repo: https://github.com/render-examples/mysql # Render's MySQL template
-    envVars:
-      - key: MYSQL_ROOT_PASSWORD
-        generateValue: true
-      - key: MYSQL_DATABASE
-        value: pmtool_db
-      - key: MYSQL_USER
-        value: pmtool_user
-      - key: MYSQL_PASSWORD
-        generateValue: true
-    disk:
-      name: mysql-data
-      mountPath: /var/lib/mysql
-      sizeGB: 1
 
 databases:
+  # PostgreSQL Database (Render's free managed database)
   - name: pmtool-db
     databaseName: pmtool_db
     user: pmtool_user
-    plan: free # Change to paid plan as needed
+    plan: free
